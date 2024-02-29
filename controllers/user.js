@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import User from '../models/user.js';
+
 import jwt from '../services/jwt.js';
 
 export function pruebas(req, res) {
@@ -68,12 +69,18 @@ export async function loginUser(req, res) {
 
         if (passwordMatch) {
             if (params.gethash) {
-                // Aquí deberías devolver el hash si se solicita explícitamente
-                res.status(200).send({
-                    token: jwt.createToken(user)
-                });
-
+                try {
+                    // Crea el token JWT utilizando la función createToken del módulo jwt
+                    const token = jwt.createToken(user);
+            
+                    // Envía una respuesta con el token generado
+                    res.status(200).send({ token });
+                } catch (error) {
+                    console.error('Error al crear el token:', error);
+                    res.status(500).send({ message: 'Error al crear el token', error });
+                }
             } else {
+                // Si no se solicita explícitamente el hash, envía la información del usuario
                 res.status(200).send({ user });
             }
         } else {
@@ -83,7 +90,38 @@ export async function loginUser(req, res) {
         console.error('Error en la petición:', error);
         res.status(500).send({ message: 'Error en la petición', error });
     }
+    
 }
+export async function updateUser(req, res) {
+    // Obtén el ID del usuario a actualizar desde los parámetros de la solicitud
+    const userId = req.params.id;
+    // Obtén los nuevos datos del usuario desde el cuerpo de la solicitud
+    const newData = req.body;
 
+    try {
+        // Busca el usuario por su ID en la base de datos
+        const user = await User.findById(userId);
+        
+        // Si no se encuentra el usuario, devuelve un mensaje de error
+        if (!user) {
+            return res.status(404).send({ message: 'El usuario no existe' });
+        }
+
+        // Actualiza los campos del usuario con los nuevos datos
+        Object.keys(newData).forEach(key => {
+            user[key] = newData[key];
+        });
+
+        // Guarda los cambios en la base de datos
+        await user.save();
+
+        // Devuelve una respuesta con el usuario actualizado
+        res.status(200).send({ user });
+    } catch (error) {
+        // Si ocurre un error durante el proceso, devuelve un mensaje de error
+        console.error('Error al actualizar el usuario:', error);
+        res.status(500).send({ message: 'Error al actualizar el usuario', error });
+    }
+}
 
 export default pruebas;
