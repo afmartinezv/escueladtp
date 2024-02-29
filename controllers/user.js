@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import User from '../models/user.js';
+import jwt from '../services/jwt.js';
 
 export function pruebas(req, res) {
     res.status(200).send({
@@ -68,6 +69,10 @@ export async function loginUser(req, res) {
         if (passwordMatch) {
             if (params.gethash) {
                 // Aquí deberías devolver el hash si se solicita explícitamente
+                res.status(200).send({
+                    token: jwt.createToken(user)
+                });
+
             } else {
                 res.status(200).send({ user });
             }
