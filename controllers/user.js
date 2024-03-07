@@ -2,6 +2,8 @@ import bcrypt from 'bcrypt';
 import User from '../models/user.js';
 
 import jwt from '../services/jwt.js';
+import fs from 'fs';
+
 
 export function pruebas(req, res) {
     res.status(200).send({
@@ -124,4 +126,52 @@ export async function updateUser(req, res) {
     }
 }
 
+export async function uploadImage(req, res) {
+    const userId = req.params.id;
+
+    // Verificar si se ha subido un archivo
+    if (req.files && req.files.image) {
+        const file = req.files.image;
+
+        // Obtener la ruta del archivo
+        const filePath = file.path;
+
+        // Mover el archivo a la ubicación deseada
+        const moveFile = () => {
+            const fileName = `${userId}-${file.name}`;
+            const newFilePath = `uploads/${fileName}`;
+
+            // Mover el archivo
+            fs.rename(filePath, newFilePath, async (err) => {
+                if (err) {
+                    console.error('Error al mover el archivo:', err);
+                    return res.status(500).json({ message: 'Error al subir la imagen' });
+                }
+
+                try {
+                    // Actualizar la propiedad de imagen del usuario en la base de datos
+                    const userUpdated = await User.findByIdAndUpdate(userId, { image: fileName }, { new: true });
+
+                    // Si se actualiza correctamente, enviar una respuesta exitosa
+                    res.status(200).json({ message: 'Imagen subida correctamente', user: userUpdated });
+                } catch (error) {
+                    // Si ocurre un error al actualizar la base de datos, enviar un mensaje de error
+                    console.error('Error al actualizar la imagen del usuario:', error);
+                    res.status(500).json({ message: 'Error al actualizar la imagen del usuario' });
+                }
+            });
+        };
+
+        moveFile();
+    } else {
+        // Si no se encontró ningún archivo, enviar un mensaje de error
+        res.status(400).json({ message: 'No se ha subido ninguna imagen' });
+    }
+}
+
+
 export default pruebas;
+
+
+
+
